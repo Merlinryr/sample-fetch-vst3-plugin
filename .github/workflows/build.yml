@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            extra: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"'
+          - os: windows-latest
+            extra: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.extra }}
+        shell: bash
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd build/SampleFetch_artefacts/Release
+          # ad-hoc signature: no Apple Developer account, so the user clears quarantine once (see README)
+          codesign --force --deep --sign - VST3/SampleFetch.vst3 Standalone/SampleFetch.app
+          ditto -c -k --keepParent VST3/SampleFetch.vst3 $GITHUB_WORKSPACE/SampleFetch-macOS-VST3.zip
+          ditto -c -k --keepParent Standalone/SampleFetch.app $GITHUB_WORKSPACE/SampleFetch-macOS-Standalone.zip
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive build/SampleFetch_artefacts/Release/VST3/SampleFetch.vst3 SampleFetch-Windows-VST3.zip
+          Compress-Archive build/SampleFetch_artefacts/Release/Standalone/SampleFetch.exe SampleFetch-Windows-Standalone.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SampleFetch-${{ runner.os }}
+          path: SampleFetch-*.zip
