@@ -14,10 +14,7 @@ New WAVs are saved to `~/Music/SampleFetch` until you send them. On first use th
 
 Download the zip for your OS from the latest [GitHub Actions run](../../actions).
 
-- **macOS:** put `SampleFetch.vst3` in `~/Library/Audio/Plug-Ins/VST3/`, then run this once (the build isn't notarized):
-  ```bash
-  xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/SampleFetch.vst3
-  ```
+- **macOS:** unzip **SampleFetch-macOS** and double-click `SampleFetch-macOS-Installer.pkg`. The installer isn't notarized, so the first time macOS blocks it. Go to **System Settings → Privacy & Security**, click **Open Anyway** next to the SampleFetch message, then enter your password. The plugin is installed to `/Library/Audio/Plug-Ins/VST3/`.
 - **Windows:** put `SampleFetch.vst3` in `C:\Program Files\Common Files\VST3\`.
 
 Then in Live: **Settings → Plug-Ins → Use VST3 Plug-In System Folders → Rescan**.

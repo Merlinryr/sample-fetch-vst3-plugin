@@ -29,10 +29,20 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cd build/SampleFetch_artefacts/Release
-          # ad-hoc signature: no Apple Developer account, so the user clears quarantine once (see README)
+          # ad-hoc signature only: no Apple Developer account, so the .pkg needs "Open Anyway" once (see README)
           codesign --force --deep --sign - VST3/SampleFetch.vst3 Standalone/SampleFetch.app
-          ditto -c -k --keepParent VST3/SampleFetch.vst3 $GITHUB_WORKSPACE/SampleFetch-macOS-VST3.zip
           ditto -c -k --keepParent Standalone/SampleFetch.app $GITHUB_WORKSPACE/SampleFetch-macOS-Standalone.zip
+
+          # Installer for /Library/Audio/Plug-Ins/VST3. Relocation is off, otherwise Installer would
+          # "upgrade" a stray copy of the bundle (e.g. in Downloads) instead of installing it.
+          mkdir -p pkgroot && ditto VST3/SampleFetch.vst3 pkgroot/SampleFetch.vst3
+          pkgbuild --analyze --root pkgroot component.plist
+          plutil -replace 0.BundleIsRelocatable -bool NO component.plist
+          pkgbuild --root pkgroot --component-plist component.plist \
+            --identifier com.merlinryr.samplefetch.vst3 --version "0.1.${{ github.run_number }}" \
+            --install-location /Library/Audio/Plug-Ins/VST3 \
+            $GITHUB_WORKSPACE/SampleFetch-macOS-Installer.pkg
+          pkgutil --payload-files $GITHUB_WORKSPACE/SampleFetch-macOS-Installer.pkg | head -5
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
@@ -44,4 +54,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: SampleFetch-${{ runner.os }}
-          path: SampleFetch-*.zip
+          path: |
+            SampleFetch-*.zip
+            SampleFetch-*.pkg
